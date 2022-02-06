@@ -1,32 +1,53 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import { useParams, Route, Link, useRouteMatch } from 'react-router-dom';
+
+import useHttp from '../hooks/use-http';
+import { getSingleQuote } from '../lib/api';
 
 import Comments from '../components/comments/Comments';
 import HighlightedQuote from '../components/quotes/HighlightedQuote';
+import LoadingSpinner from '../components/UI/LoadingSpinner';
 
-const DUMMY_QUOTES = [
-  {
-    id: 'q1',
-    author: 'yashar',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-  },
-  {
-    id: 'q2',
-    author: 'akish',
-    text: 'Etiam imperdiet leo sed dolor pulvinar consequat. Etiam tempor imperdiet magna.',
-  },
-];
+// const DUMMY_QUOTES = [
+//   {
+//     id: 'q1',
+//     author: 'yashar',
+//     text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+//   },
+//   {
+//     id: 'q2',
+//     author: 'akish',
+//     text: 'Etiam imperdiet leo sed dolor pulvinar consequat. Etiam tempor imperdiet magna.',
+//   },
+// ];
 
 const QuoteDetail = () => {
   const match = useRouteMatch();
+
   const params = useParams();
-  const quote = DUMMY_QUOTES.find((qut) => qut.id === params.quoteId);
-  if (!quote) {
+  const { quoteId } = params;
+
+  const {sendRequest, status, data: loadedQuote, error} =useHttp(getSingleQuote, true);
+
+  useEffect(() => {sendRequest(quoteId);},[sendRequest, quoteId])
+  // const quote = DUMMY_QUOTES.find((qut) => qut.id === params.quoteId);
+
+  if (status === 'pending') {
+    return(
+      <div className="centered"><LoadingSpinner /></div>
+    )
+  }
+
+  if (error) {
+    return <p className="centered focused">{error}</p>
+  }
+
+  if (!loadedQuote.text) {
     return <p>No quote found</p>
   }
   return (
     <Fragment>
-      <HighlightedQuote text={quote.text} author={quote.author} />
+      <HighlightedQuote text={loadedQuote.text} author={loadedQuote.author} />
       <Route path={match.path} exact>
         <div className="centered">
           <Link className="btn--flat" to={`${match.url}/comments`}>Load Comments</Link>
